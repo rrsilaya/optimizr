@@ -11,7 +11,11 @@ polyregInput <- fluidRow(
         )
       )
     ),
-    numericInput('polyreg_estimation', 'Get estimate of: ', 0)
+    numericInput('polyreg_estimation', 'Get estimate of: ', 0),
+    div(
+      style='height: 84px; display: flex; align-items: center; margin-left: 15px',
+      checkboxInput('polyregHasHeader', 'File contains header', TRUE)
+    )
   )
 )
 

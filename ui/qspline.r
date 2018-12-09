@@ -11,7 +11,11 @@ qsplineInput <- fluidRow(
         )
       )
     ),
-    numericInput('qspline_estimation', 'Get estimate of: ', 0)
+    numericInput('qspline_estimation', 'Get estimate of: ', 0),
+    div(
+      style='height: 84px; display: flex; align-items: center; margin-left: 15px',
+      checkboxInput('qsplineHasHeader', 'File contains header', TRUE)
+    )
   )
 )
 

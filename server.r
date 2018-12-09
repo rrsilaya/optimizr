@@ -8,19 +8,77 @@ qsplineEstimation <- function(results, x) {
   return(NA)
 }
 
+neg <- function(val) val * -1
+
+createTableu <- function(dt) {
+  ROWS = 9
+  COLS = 25
+
+  return(matrix(c(
+    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, dt[4,2],
+    0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, dt[4,3],
+    0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, dt[4,4],
+    0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, dt[4,5],
+    0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, dt[4,6],
+    -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, neg(dt[1,1]),
+    0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, neg(dt[2,1]),
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 0, neg(dt[3,1]),
+    dt[1:3, 2:6], integer(8), 1, 0
+  ), nrow=ROWS, ncol=COLS, byrow=TRUE))
+}
+
+rownames = c('Denver', 'Phoenix', 'Dallas', 'Demands')
+colnames= c('Supply', 'Sacramento', 'Salt Lake', 'Chicago', 'Albeq', 'New York')
+
+initialData = matrix(
+  c(
+    310, 260, 280, 0,
+    10, 6, 3, 190,
+    8, 5, 4, 220,
+    6, 4, 5, 250,
+    5, 3, 5, 100,
+    4, 6, 9, 120
+  ),
+  nrow=length(rownames),
+  dimnames=list(c(rownames), c(colnames))
+)
+
 server <- function(input, output) {
   polyreg <- reactiveValues()
   qspline <- reactiveValues()
+  simplex <- reactiveValues()
 
   # Observers
   observeEvent(input$polyregInput, {
-    polyreg$data = read.csv(input$polyregInput$datapath, header=TRUE)
+    polyreg$data = read.csv(input$polyregInput$datapath, header=input$polyregHasHeader)
     polyreg$data = polyreg$data[with(polyreg$data, order(polyreg$data[[1]])),]
   })
 
   observeEvent(input$qsplineInput, {
-    qspline$data = read.csv(input$qsplineInput$datapath, header=TRUE)
+    qspline$data = read.csv(input$qsplineInput$datapath, header=input$qsplineHasHeader)
     qspline$data = qspline$data[with(qspline$data, order(qspline$data[[1]])),]
+  })
+
+  observeEvent(input$simplexInput, {
+    data = hot_to_r(input$simplexInput)
+    simplex$data = createTableu(data)
+
+    simplex$result = Simplex(simplex$data)
+    disable('previous')
+  })
+
+  observeEvent(input$'next', {
+    simplex$index = simplex$index + 1
+
+    enable('previous')
+    if (simplex$index == length(simplex$result$tableus)) disable('next')
+  })
+
+  observeEvent(input$'previous', {
+    simplex$index = simplex$index - 1
+
+    if (simplex$index == 1) disable('previous')
+    enable('next')
   })
 
   observe({
@@ -48,7 +106,7 @@ server <- function(input, output) {
   )
 
   output$polyreg <- renderPlot({
-    req(polyreg$data, polyreg$degree, polyreg$degree < (length(polyreg$data[[1]]) - 1))
+    req(polyreg$data, polyreg$degree, polyreg$degree < length(polyreg$data[[1]]))
 
     x = polyreg$data[[1]]
     y = polyreg$data[[2]]
@@ -67,12 +125,18 @@ server <- function(input, output) {
         data=series,
         aes(x=x, y=predicted_y)
       )  + geom_line() + geom_point() +
-      geom_point(aes(x=x, y=y, color='red'))
+      geom_point(aes(x=x, y=y, color='red')) +
+      theme_minimal() +
+      theme(
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position='none'
+      )
     )
   })
 
   output$polyregFunction <- renderText({
-    req(polyreg$result, polyreg$degree < (length(polyreg$data[[1]]) - 1))
+    req(polyreg$result, polyreg$degree < length(polyreg$data[[1]]))
 
     deparse(polyreg$result$'function')[2]
   })
@@ -123,6 +187,75 @@ server <- function(input, output) {
     valueBox(
       qsplineEstimation(qspline$result, qspline$'qspline_estimation'),
       paste('Quadratic Spline Interpolation Estimation for', qspline$'qspline_estimation'),
+      icon=icon('stats', lib='glyphicon'),
+      color='blue'
+    )
+  })
+
+  output$simplexInput <- renderRHandsontable(
+    rhandsontable(initialData, width = '100%', rowHeaderWidth=150, stretchH = 'all')
+      %>% hot_validate_numeric(cols = c(1:6), min = 0)
+      %>% hot_cell(4, 'Supply', readOnly = TRUE)
+  )
+
+  output$simplexResults <- renderRHandsontable({
+    req(simplex$result)
+
+    result = simplex$result$result
+
+    row = c('Denver', 'Phoenix', 'Dallas', 'Total', 'Shipping')
+    col = c('Sacramento', 'Salt Lake', 'Chicago', 'Albeq', 'New York', 'Total')
+
+    view = matrix(c(
+      result[, 1], sum(result[, 1]), sum(result[, 1] * simplex$data[9, 1:3]),
+      result[, 2], sum(result[, 2]), sum(result[, 2] * simplex$data[9, 4:6]),
+      result[, 3], sum(result[, 3]), sum(result[, 3] * simplex$data[9, 7:9]),
+      result[, 4], sum(result[, 4]), sum(result[, 4] * simplex$data[9, 10:12]),
+      result[, 5], sum(result[, 5]), sum(result[, 5] * simplex$data[9, 13:15]),
+      sum(result[1,]), sum(result[2,]), sum(result[3,]), sum(result), simplex$result$profit
+    ), nrow=5, ncol=6, dimnames=list(c(row), c(col)))
+
+    simplex$index = 1
+    rhandsontable(view, width='100%', rowHeaderWidth=100, stretchH='all')
+  })
+
+  output$tableu <- renderRHandsontable({
+    req(simplex$result, simplex$index)
+
+    tableu = simplex$result$tableus[[ simplex$index ]]
+    colnames = c(paste('X', 1:15, sep=''), paste('S', 1:8, sep=''), 'C', 'RHS')
+    rownames = c(1:8, 'C')
+
+    rhandsontable(
+      matrix(tableu, nrow=9, dimnames=list(c(rownames), c(colnames))),
+      width = '100%',
+      stretchH = 'all'
+    )
+  })
+
+  output$index <- renderText({
+    req(simplex$result)
+
+    return(paste('Iteration ', simplex$index, ' of ', length(simplex$result$tableus), sep=''))
+  })
+
+  output$'minCost' <- renderValueBox({
+    req(simplex$result)
+
+    valueBox(
+      simplex$result$profit,
+      'Minimum Shipping Cost',
+      icon=icon('stats', lib='glyphicon'),
+      color='blue'
+    )
+  })
+
+  output$'totalShip' <- renderValueBox({
+    req(simplex$result)
+
+    valueBox(
+      sum(simplex$result$result),
+      'Total Number of Shipping',
       icon=icon('stats', lib='glyphicon'),
       color='blue'
     )

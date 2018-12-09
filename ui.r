@@ -18,11 +18,13 @@ body = dashboardBody(
       tabName='qspline',
       qsplineInput,
       qsplineData
+    ),
+    tabItem(
+      tabName='simplex',
+      simplexData,
+      simplexResults,
+      tableu
     )
-    # tabItem(
-    #   tabName='simplex',
-    #   qsplineData
-    # )
   )
 )
 
