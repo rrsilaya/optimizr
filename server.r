@@ -1,3 +1,15 @@
+library(shiny)
+require(shinydashboard)
+library(ggplot2)
+library(dplyr)
+library(rhandsontable)
+library(shinyjs)
+
+source('./utils/elimination.r');
+source('./solvers/polynomial-regression.r')
+source('./solvers/qspline.r')
+source('./solvers/simplex.r')
+
 qsplineEstimation <- function(results, x) {
   # determines interval function given x
 

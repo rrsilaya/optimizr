@@ -1,3 +1,14 @@
+library(shiny)
+require(shinydashboard)
+library(ggplot2)
+library(dplyr)
+library(rhandsontable)
+library(shinyjs)
+
+source('./ui/polyreg.r')
+source('./ui/qspline.r')
+source('./ui/simplex.r')
+
 header = dashboardHeader(title='Optimizr')
 sidebar = dashboardSidebar(
   sidebarMenu(
