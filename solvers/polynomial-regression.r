@@ -20,7 +20,6 @@ PolynomialRegression <- function(x, y, degree) {
     augcoeff[row, degree + 2] = sum((x^(row - 1)) * y)
   }
 
-  print(augcoeff)
   result = GaussJordanElimination(list(variables=paste('x', 0:degree, sep=''), matrix=augcoeff));
 
   # Create the function

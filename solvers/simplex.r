@@ -10,18 +10,22 @@ Simplex <- function(matr) {
   while (any(matr[ROWS, 1:(COLS - 1)] < 0) || any(matr[1:(ROWS - 1), COLS] < 0)) {
     # While last row has negative values
     if (any(matr[1:(ROWS - 1), COLS] < 0)) {
+      # PHASE 1: RHS has negative values
       pivotRow = order(matr[1:(ROWS - 1), COLS])[1]
 
       testRatio = matr[pivotRow, 1:(COLS - 1)] / matr[pivotRow, COLS]
       testRatio[testRatio <= 0] = -Inf
       pivotCol = order(testRatio)[length(testRatio)]
     } else {
+      # PHASE 2: Last row has negative values
       pivotCol = order(matr[ROWS, 1:(COLS - 1)])[1]
 
       testRatio = matr[1:(ROWS - 1), COLS] / matr[1:(ROWS - 1), pivotCol]
       testRatio[testRatio <= 0] = Inf
       pivotRow = order(testRatio)[1]
     }
+
+    if (matr[pivotRow, COLS] < 0 && all(matr[pivotRow, 1:(COLS - 1)] >= 0)) return(NA)
 
     # Normalize Row
     matr[pivotRow,] = matr[pivotRow,] / matr[pivotRow, pivotCol]

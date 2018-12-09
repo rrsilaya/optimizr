@@ -1,4 +1,6 @@
 qsplineEstimation <- function(results, x) {
+  # determines interval function given x
+
   for (interval in 2:(length(results$functions) + 1)) {
     if (x >= results$data[[1]][interval - 1] && x <= results$data[[1]][interval]) {
       return(results$functions[[interval - 1]](x))
@@ -11,18 +13,20 @@ qsplineEstimation <- function(results, x) {
 neg <- function(val) val * -1
 
 createTableu <- function(dt) {
+  # creates tableu given input data table
+
   ROWS = 9
   COLS = 25
 
   return(matrix(c(
-    1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, dt[4,2],
-    0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, dt[4,3],
-    0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, dt[4,4],
-    0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, dt[4,5],
-    0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, dt[4,6],
-    -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, neg(dt[1,1]),
-    0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, neg(dt[2,1]),
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 1, 0, neg(dt[3,1]),
+    -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, neg(dt[4,2]),
+    0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, neg(dt[4,3]),
+    0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, neg(dt[4,4]),
+    0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, neg(dt[4,5]),
+    0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, neg(dt[4,6]),
+    1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, dt[1,1],
+    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, dt[2,1],
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, dt[3,1],
     dt[1:3, 2:6], integer(8), 1, 0
   ), nrow=ROWS, ncol=COLS, byrow=TRUE))
 }
@@ -33,11 +37,11 @@ colnames= c('Supply', 'Sacramento', 'Salt Lake', 'Chicago', 'Albeq', 'New York')
 initialData = matrix(
   c(
     310, 260, 280, 0,
-    10, 6, 3, 190,
-    8, 5, 4, 220,
-    6, 4, 5, 250,
-    5, 3, 5, 100,
-    4, 6, 9, 120
+    10, 6, 3, 180,
+    8, 5, 4, 80,
+    6, 4, 5, 200,
+    5, 3, 5, 160,
+    4, 6, 9, 220
   ),
   nrow=length(rownames),
   dimnames=list(c(rownames), c(colnames))
@@ -243,7 +247,7 @@ server <- function(input, output) {
     req(simplex$result)
 
     valueBox(
-      simplex$result$profit,
+      paste('$', simplex$result$profit, sep=''),
       'Minimum Shipping Cost',
       icon=icon('stats', lib='glyphicon'),
       color='blue'
